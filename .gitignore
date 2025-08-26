@@ -211,4 +211,5 @@ venv/
 # Environment files (keep only templates)
 .env
 .env.local
-.env.*.local
+.env.dev
+.env.prod
