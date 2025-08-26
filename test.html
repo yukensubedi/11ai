@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>11AI Chat</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; background: #f9f9f9; }
+    #chat-box { width: 600px; height: 300px; padding: 1rem; border: 1px solid #ccc; background: #fff; overflow-y: auto; margin-bottom: 1rem; }
+    #input-box { display: flex; gap: 0.5rem; }
+    #prompt { flex: 1; padding: 0.5rem; }
+    button { padding: 0.5rem 1rem; background: #007bff; color: #fff; border: none; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>11AI Chat</h1>
+  <div id="chat-box"></div>
+  <div id="input-box">
+    <input id="prompt" type="text" placeholder="Type your message..." />
+    <button id="send">Send</button>
+  </div>
+
+  <script>
+    // If you log in via Django and store the access token, put it in localStorage under 'accessToken'
+    // e.g., localStorage.setItem('accessToken', '<JWT>');
+    const getToken = () => localStorage.getItem('accessToken') || '';
+
+    document.getElementById('send').onclick = sendPrompt;
+
+    async function sendPrompt() {
+      const chatBox = document.getElementById("chat-box");
+      const input = document.getElementById("prompt");
+      const userMessage = input.value.trim();
+      if (!userMessage) return;
+
+      chatBox.innerHTML += `<div><b>You:</b> ${escapeHtml(userMessage)}</div>`;
+      input.value = "";
+
+      const userId = "demo-user"; // later, use actual logged-in user id
+
+      const headers = { "Content-Type": "application/json" };
+      const token = getToken();
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      let response;
+      try {
+        response = await fetch(`http://localhost:8001/chat/${encodeURIComponent(userId)}`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ prompt: userMessage }),
+        });
+      } catch (err) {
+        chatBox.innerHTML += `<div style="color:#b00;"><b>Error:</b> ${escapeHtml(String(err))}</div>`;
+        return;
+      }
+
+      if (!response.ok || !response.body) {
+        const text = await response.text().catch(()=> '');
+        chatBox.innerHTML += `<div style="color:#b00;"><b>Server error:</b> ${response.status} ${escapeHtml(text)}</div>`;
+        return;
+      }
+
+      chatBox.innerHTML += `<div><b>AI:</b> <span id="ai-response"></span></div>`;
+      const aiResponse = document.getElementById("ai-response");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          aiResponse.textContent += decoder.decode(value, { stream: true });
+          chatBox.scrollTop = chatBox.scrollHeight;
+        }
+      } catch (err) {
+        aiResponse.textContent += "\n[stream ended]";
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, s => (
+        { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]
+      ));
+    }
+  </script>
+</body>
+</html>

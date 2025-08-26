@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+requests
+httpx
+python-jose[cryptography]   # ✅ adds jose
+redis
+django-environ

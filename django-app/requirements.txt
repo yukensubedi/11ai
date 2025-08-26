@@ -1,0 +1,18 @@
+django
+djangorestframework
+psycopg2-binary
+djangorestframework-simplejwt
+django-allauth
+gunicorn 
+django-environ
+
+
+
+qrcode[pil]   
+pyotp
+
+
+# testing
+pytest
+pytest-django
+pytest-cov
