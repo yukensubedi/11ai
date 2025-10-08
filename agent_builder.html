@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Builder</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0f172a;
+      --bg-alt: #111c33;
+      --panel: #ffffff;
+      --panel-dark: #1e293b;
+      --accent: #6366f1;
+      --accent-strong: #4f46e5;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --border: rgba(148, 163, 184, 0.35);
+      font-family: "Inter", "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(145deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      min-height: 100vh;
+      color: #e2e8f0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 1.25rem 2.25rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    header .actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .actions button {
+      padding: 0.6rem 1.2rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(99, 102, 241, 0.12);
+      color: #e0e7ff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .actions button.primary {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border: none;
+      box-shadow: 0 15px 35px rgba(99, 102, 241, 0.35);
+    }
+
+    .actions button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 22px rgba(15, 23, 42, 0.35);
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 260px minmax(480px, 1fr) 320px;
+      gap: 1.2rem;
+      padding: 0 2rem 2rem;
+    }
+
+    .panel {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 18px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.35);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel h2 {
+      margin: 0;
+      padding: 1.1rem 1.4rem 0.6rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(226, 232, 240, 0.9);
+    }
+
+    .library {
+      overflow-y: auto;
+      padding-bottom: 1rem;
+    }
+
+    .library-section {
+      padding: 0 1.4rem 1.2rem;
+    }
+
+    .library-section h3 {
+      margin: 0 0 0.7rem;
+      font-size: 0.9rem;
+      letter-spacing: 0.08em;
+      color: rgba(148, 163, 184, 0.85);
+      font-weight: 600;
+    }
+
+    .tool-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(99, 102, 241, 0.18);
+      border-radius: 14px;
+      padding: 0.85rem;
+      margin-bottom: 0.8rem;
+      cursor: grab;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+      display: grid;
+      gap: 0.35rem;
+    }
+
+    .tool-card:active {
+      cursor: grabbing;
+    }
+
+    .tool-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+
+    .tool-card strong {
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .tool-card span {
+      font-size: 0.85rem;
+      color: rgba(148, 163, 184, 0.85);
+      line-height: 1.3;
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      background: radial-gradient(circle at top, rgba(99, 102, 241, 0.15), transparent 55%),
+                  radial-gradient(circle at bottom, rgba(14, 165, 233, 0.18), transparent 45%),
+                  #0b1120;
+      border-radius: 18px;
+      border: 1px solid rgba(99, 102, 241, 0.15);
+      overflow: hidden;
+    }
+
+    .canvas {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 520px;
+      background-image: linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+      background-size: 48px 48px;
+      background-position: center;
+    }
+
+    .connection-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    .connection-path {
+      fill: none;
+      stroke: rgba(148, 163, 184, 0.6);
+      stroke-width: 2.5;
+      pointer-events: none;
+      filter: drop-shadow(0 4px 12px rgba(15, 23, 42, 0.55));
+    }
+
+    .connection-path.preview {
+      stroke-dasharray: 6 4;
+      opacity: 0.85;
+    }
+
+    .canvas.empty::after {
+      content: "Drag building blocks here";
+      color: rgba(148, 163, 184, 0.6);
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 0.75rem 1.35rem;
+      border-radius: 999px;
+      border: 1px dashed rgba(148, 163, 184, 0.35);
+      text-transform: uppercase;
+    }
+
+    .node {
+      position: absolute;
+      width: 220px;
+      padding: 0.95rem;
+      border-radius: 16px;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.45);
+      display: grid;
+      gap: 0.5rem;
+      cursor: move;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .node:focus-visible {
+      outline: 2px solid rgba(99, 102, 241, 0.55);
+      outline-offset: 2px;
+    }
+
+    .node.selected {
+      border-color: rgba(129, 140, 248, 0.9);
+      box-shadow: 0 18px 40px rgba(99, 102, 241, 0.35);
+    }
+
+    .node-handle {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      border: 2px solid rgba(99, 102, 241, 0.55);
+      background: rgba(15, 23, 42, 0.95);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: crosshair;
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.55);
+      transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .node-handle::after {
+      content: '';
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: rgba(99, 102, 241, 0.85);
+    }
+
+    .node-handle:hover,
+    .node-handle.active {
+      transform: scale(1.1);
+      background: rgba(99, 102, 241, 0.22);
+      border-color: rgba(99, 102, 241, 0.8);
+    }
+
+    .node-handle:focus-visible {
+      outline: none;
+      border-color: rgba(129, 140, 248, 0.95);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35);
+    }
+
+    .node-handle-input {
+      left: -14px;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .node-handle-output {
+      right: -14px;
+      top: 50%;
+      transform: translate(50%, -50%);
+    }
+
+    .node-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .node-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      letter-spacing: 0.03em;
+    }
+
+    .node-type {
+      font-size: 0.75rem;
+      padding: 0.18rem 0.55rem;
+      border-radius: 999px;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .node-description {
+      font-size: 0.82rem;
+      color: rgba(148, 163, 184, 0.85);
+      line-height: 1.4;
+    }
+
+    .node-footer {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      padding-right: 1rem;
+    }
+
+    .node-tag {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .properties {
+      padding: 0 1.4rem 1.6rem;
+      overflow-y: auto;
+    }
+
+    .properties .empty-state {
+      margin-top: 2.8rem;
+      color: rgba(148, 163, 184, 0.65);
+      line-height: 1.6;
+    }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin: 1rem 0 0.35rem;
+      color: rgba(148, 163, 184, 0.85);
+    }
+
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      background: rgba(15, 23, 42, 0.8);
+      color: #e2e8f0;
+      border-radius: 12px;
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      font-size: 0.9rem;
+      transition: border 0.15s ease;
+      resize: vertical;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: rgba(129, 140, 248, 0.65);
+    }
+
+    textarea {
+      min-height: 90px;
+    }
+
+    .properties button {
+      margin-top: 1.4rem;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #22d3ee 0%, #6366f1 100%);
+      color: #0f172a;
+      font-weight: 600;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .properties button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 20px rgba(34, 211, 238, 0.28);
+    }
+
+    .footer {
+      margin-top: auto;
+      padding: 1rem 1.4rem 1.3rem;
+      font-size: 0.75rem;
+      color: rgba(148, 163, 184, 0.75);
+      border-top: 1px solid rgba(148, 163, 184, 0.08);
+    }
+
+    .properties .inline {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+    }
+
+    .node .remove-node {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      border: none;
+      background: rgba(239, 68, 68, 0.2);
+      color: rgba(248, 113, 113, 0.95);
+      font-weight: 700;
+      cursor: pointer;
+      display: none;
+    }
+
+    .node:hover .remove-node,
+    .node.selected .remove-node {
+      display: block;
+    }
+
+    @media (max-width: 1180px) {
+      main {
+        grid-template-columns: 240px 1fr;
+        grid-template-rows: minmax(360px, 1fr) 360px;
+      }
+
+      .panel.properties-panel {
+        grid-column: span 2;
+      }
+    }
+
+    @media (max-width: 860px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      main {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+      }
+
+      .panel.properties-panel {
+        grid-column: span 1;
+      }
+
+      .node {
+        transform: scale(0.92);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Agent Builder</h1>
+      <p style="margin:0.4rem 0 0; color: rgba(148, 163, 184, 0.85); max-width: 520px;">
+        Craft multi-step AI workflows by dragging triggers, tools, models and outputs onto the canvas. Configure
+        each block to shape your assistant's behaviour.
+      </p>
+    </div>
+    <div class="actions">
+      <button type="button" id="clear-canvas">Reset Canvas</button>
+      <button type="button" class="primary" id="export-blueprint">Export Blueprint</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Toolbox</h2>
+      <div class="library" id="library"></div>
+      <div class="footer">Drag a block to the canvas to create an instance. Click a node to edit its properties.</div>
+    </section>
+
+    <section class="canvas-wrapper">
+      <div class="canvas empty" id="canvas" tabindex="0">
+        <svg class="connection-layer" id="connection-layer" width="100%" height="100%" aria-hidden="true"></svg>
+      </div>
+    </section>
+
+    <section class="panel properties-panel">
+      <h2>Properties</h2>
+      <div class="properties" id="properties"></div>
+      <div class="footer">Changes update instantly. Export the blueprint to inspect the JSON definition.</div>
+    </section>
+  </main>
+
+  <template id="property-form-template">
+    <div>
+      <label for="node-name">Display Name</label>
+      <input id="node-name" type="text" placeholder="Name this block" />
+
+      <label for="node-description">Description</label>
+      <textarea id="node-description" placeholder="Describe the purpose"></textarea>
+
+      <div class="inline">
+        <div>
+          <label for="node-input">Input</label>
+          <select id="node-input"></select>
+        </div>
+        <div>
+          <label for="node-output">Output</label>
+          <select id="node-output"></select>
+        </div>
+      </div>
+
+      <label for="node-config">Configuration</label>
+      <textarea id="node-config" placeholder="key=value, comma separated"></textarea>
+
+      <button type="button" id="duplicate-node">Duplicate Block</button>
+    </div>
+  </template>
+
+  <script>
+    const libraryDefinitions = [
+      {
+        category: 'Triggers',
+        items: [
+          {
+            type: 'trigger',
+            title: 'HTTP Webhook',
+            description: 'Receive events from your product or third-party services.',
+            tags: ['ingress', 'event'],
+            io: { input: ['none'], output: ['payload'] },
+            config: { method: 'POST', auth: 'api-key', retries: 1 }
+          },
+          {
+            type: 'trigger',
+            title: 'Schedule',
+            description: 'Run on a repeated cadence such as hourly or daily.',
+            tags: ['cron'],
+            io: { input: ['none'], output: ['tick'] },
+            config: { cadence: '0 * * * *', timezone: 'UTC' }
+          }
+        ]
+      },
+      {
+        category: 'Knowledge',
+        items: [
+          {
+            type: 'datasource',
+            title: 'Vector Search',
+            description: 'Retrieve contextual documents from embeddings.',
+            tags: ['retrieval'],
+            io: { input: ['query'], output: ['context'] },
+            config: { index: 'docs', topK: 6 }
+          },
+          {
+            type: 'datasource',
+            title: 'SQL Query',
+            description: 'Run structured lookups against relational databases.',
+            tags: ['sql', 'analytics'],
+            io: { input: ['question'], output: ['result'] },
+            config: { connection: 'warehouse', maxRows: 50 }
+          }
+        ]
+      },
+      {
+        category: 'Reasoning',
+        items: [
+          {
+            type: 'model',
+            title: 'Chat Completion',
+            description: 'Use an LLM with instructions, tools and structured output.',
+            tags: ['llm'],
+            io: { input: ['prompt', 'context'], output: ['response'] },
+            config: { model: 'gpt-4o-mini', temperature: 0.6 }
+          },
+          {
+            type: 'model',
+            title: 'Function Router',
+            description: 'Route requests to specialized sub-agents using similarity.',
+            tags: ['router'],
+            io: { input: ['intent'], output: ['route'] },
+            config: { strategy: 'semantic', fallbacks: 2 }
+          }
+        ]
+      },
+      {
+        category: 'Actions',
+        items: [
+          {
+            type: 'action',
+            title: 'Send Email',
+            description: 'Deliver templated emails with personalization.',
+            tags: ['outbound'],
+            io: { input: ['payload'], output: ['status'] },
+            config: { provider: 'resend', trackOpens: true }
+          },
+          {
+            type: 'action',
+            title: 'Slack Notify',
+            description: 'Post updates into a Slack channel or DM.',
+            tags: ['chatops'],
+            io: { input: ['message'], output: ['status'] },
+            config: { channel: '#agent-updates', mentions: [] }
+          }
+        ]
+      }
+    ];
+
+    const state = {
+      nodes: new Map(),
+      connections: new Map(),
+      selectedNodeId: null,
+      counter: 0,
+      connectionCounter: 0
+    };
+
+    const libraryEl = document.getElementById('library');
+    const canvasEl = document.getElementById('canvas');
+    const connectionLayer = document.getElementById('connection-layer');
+    const propertiesEl = document.getElementById('properties');
+    const clearCanvasBtn = document.getElementById('clear-canvas');
+    const exportBtn = document.getElementById('export-blueprint');
+
+    let activeConnection = null;
+
+    function renderLibrary() {
+      libraryDefinitions.forEach(section => {
+        const sectionEl = document.createElement('div');
+        sectionEl.className = 'library-section';
+
+        const heading = document.createElement('h3');
+        heading.textContent = section.category;
+        sectionEl.appendChild(heading);
+
+        section.items.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'tool-card';
+          card.draggable = true;
+          card.dataset.item = JSON.stringify(item);
+
+          card.addEventListener('dragstart', event => {
+            event.dataTransfer.setData('application/json', card.dataset.item);
+            event.dataTransfer.effectAllowed = 'copy';
+          });
+
+          const title = document.createElement('strong');
+          title.textContent = item.title;
+          card.appendChild(title);
+
+          const desc = document.createElement('span');
+          desc.textContent = item.description;
+          card.appendChild(desc);
+
+          const tags = document.createElement('div');
+          item.tags.forEach(tag => {
+            const badge = document.createElement('span');
+            badge.className = 'node-tag';
+            badge.textContent = tag;
+            tags.appendChild(badge);
+          });
+          card.appendChild(tags);
+
+          sectionEl.appendChild(card);
+        });
+
+        libraryEl.appendChild(sectionEl);
+      });
+    }
+
+    function ensureCanvasState() {
+      if (state.nodes.size === 0) {
+        canvasEl.classList.add('empty');
+      } else {
+        canvasEl.classList.remove('empty');
+      }
+    }
+
+    function getHandleElement(nodeId, type) {
+      return canvasEl.querySelector(`[data-id="${nodeId}"] .node-handle-${type}`);
+    }
+
+    function getHandleCenter(handleEl) {
+      if (!handleEl) return null;
+      const canvasRect = canvasEl.getBoundingClientRect();
+      const rect = handleEl.getBoundingClientRect();
+      return {
+        x: rect.left - canvasRect.left + rect.width / 2,
+        y: rect.top - canvasRect.top + rect.height / 2
+      };
+    }
+
+    function buildConnectionPath(start, end) {
+      if (!start || !end) return '';
+      const deltaX = end.x - start.x;
+      const curvature = Math.max(Math.abs(deltaX) * 0.5, 60);
+      const controlPoint1 = { x: start.x + curvature, y: start.y };
+      const controlPoint2 = { x: end.x - curvature, y: end.y };
+      return `M ${start.x} ${start.y} C ${controlPoint1.x} ${controlPoint1.y} ${controlPoint2.x} ${controlPoint2.y} ${end.x} ${end.y}`;
+    }
+
+    function updateConnectionPath(connection) {
+      if (!connection?.pathEl) return;
+      const sourceHandle = getHandleElement(connection.sourceId, 'output');
+      const targetHandle = getHandleElement(connection.targetId, 'input');
+      const start = getHandleCenter(sourceHandle);
+      const end = getHandleCenter(targetHandle);
+      if (!start || !end) return;
+      connection.pathEl.setAttribute('d', buildConnectionPath(start, end));
+    }
+
+    function updateConnectionsForNode(nodeId) {
+      state.connections.forEach(connection => {
+        if (connection.sourceId === nodeId || connection.targetId === nodeId) {
+          updateConnectionPath(connection);
+        }
+      });
+    }
+
+    function updateAllConnections() {
+      state.connections.forEach(connection => updateConnectionPath(connection));
+    }
+
+    function getCanvasPoint(clientX, clientY) {
+      const rect = canvasEl.getBoundingClientRect();
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    function beginConnection(event, nodeId, handleType) {
+      if (activeConnection) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const handleEl = event.currentTarget;
+      const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      pathEl.classList.add('connection-path', 'preview');
+      connectionLayer.appendChild(pathEl);
+      handleEl.classList.add('active');
+
+      activeConnection = {
+        originHandle: handleEl,
+        direction: handleType,
+        sourceId: handleType === 'output' ? nodeId : null,
+        targetId: handleType === 'input' ? nodeId : null,
+        pathEl
+      };
+
+      updateActiveConnectionPath(event);
+      document.addEventListener('mousemove', trackActiveConnection);
+      document.addEventListener('mouseup', endActiveConnection, { once: true });
+    }
+
+    function trackActiveConnection(event) {
+      updateActiveConnectionPath(event);
+    }
+
+    function updateActiveConnectionPath(event) {
+      if (!activeConnection?.pathEl) return;
+      const pointer = getCanvasPoint(event.clientX, event.clientY);
+      const origin = getHandleCenter(activeConnection.originHandle);
+      if (!origin) return;
+      let start;
+      let end;
+
+      if (activeConnection.direction === 'output') {
+        start = origin;
+        end = pointer;
+      } else {
+        start = pointer;
+        end = origin;
+      }
+
+      activeConnection.pathEl.setAttribute('d', buildConnectionPath(start, end));
+    }
+
+    function commitConnection(sourceId, targetId, pathEl) {
+      if (!sourceId || !targetId || sourceId === targetId) {
+        return false;
+      }
+
+      const duplicate = Array.from(state.connections.values()).some(connection => (
+        connection.sourceId === sourceId && connection.targetId === targetId
+      ));
+
+      if (duplicate) {
+        return false;
+      }
+
+      const connectionId = `connection-${++state.connectionCounter}`;
+      pathEl.classList.remove('preview');
+      pathEl.dataset.connectionId = connectionId;
+
+      const connection = {
+        id: connectionId,
+        sourceId,
+        targetId,
+        pathEl
+      };
+
+      state.connections.set(connectionId, connection);
+      updateConnectionPath(connection);
+      return true;
+    }
+
+    function endActiveConnection(event) {
+      document.removeEventListener('mousemove', trackActiveConnection);
+      document.removeEventListener('mouseup', endActiveConnection);
+      if (!activeConnection) return;
+
+      const { originHandle, direction, pathEl, sourceId, targetId } = activeConnection;
+      let created = false;
+
+      const targetHandle = event.target.closest?.('.node-handle');
+      if (targetHandle && targetHandle !== originHandle) {
+        const targetType = targetHandle.dataset.handleType;
+        const targetNodeId = targetHandle.dataset.nodeId;
+
+        if (direction === 'output' && targetType === 'input') {
+          created = commitConnection(sourceId, targetNodeId, pathEl);
+        } else if (direction === 'input' && targetType === 'output') {
+          created = commitConnection(targetNodeId, targetId, pathEl);
+        }
+      }
+
+      if (!created && pathEl) {
+        pathEl.remove();
+      }
+
+      originHandle.classList.remove('active');
+      activeConnection = null;
+    }
+
+    function removeConnection(connectionId) {
+      const connection = state.connections.get(connectionId);
+      if (!connection) return;
+      connection.pathEl?.remove();
+      state.connections.delete(connectionId);
+    }
+
+    function removeConnectionsForNode(nodeId) {
+      const related = Array.from(state.connections.values()).filter(connection => (
+        connection.sourceId === nodeId || connection.targetId === nodeId
+      ));
+      related.forEach(connection => removeConnection(connection.id));
+    }
+
+    function createNodeElement(nodeId, data) {
+      const node = document.createElement('article');
+      node.className = 'node';
+      node.dataset.id = nodeId;
+
+      node.innerHTML = `
+        <button class="remove-node" title="Remove">×</button>
+        <div class="node-header">
+          <div>
+            <div class="node-title">${data.title}</div>
+            <div class="node-description">${data.description}</div>
+          </div>
+          <span class="node-type">${data.type}</span>
+        </div>
+        <div class="node-footer">
+          ${(data.tags || []).map(tag => `<span class="node-tag">${tag}</span>`).join('')}
+        </div>
+      `;
+
+      const inputHandle = document.createElement('button');
+      inputHandle.type = 'button';
+      inputHandle.className = 'node-handle node-handle-input';
+      inputHandle.dataset.handleType = 'input';
+      inputHandle.dataset.nodeId = nodeId;
+      inputHandle.setAttribute('aria-label', 'Connect input');
+
+      const outputHandle = document.createElement('button');
+      outputHandle.type = 'button';
+      outputHandle.className = 'node-handle node-handle-output';
+      outputHandle.dataset.handleType = 'output';
+      outputHandle.dataset.nodeId = nodeId;
+      outputHandle.setAttribute('aria-label', 'Connect output');
+
+      node.appendChild(inputHandle);
+      node.appendChild(outputHandle);
+
+      node.querySelector('.remove-node').addEventListener('click', event => {
+        event.stopPropagation();
+        deleteNode(nodeId);
+      });
+
+      node.addEventListener('mousedown', event => {
+        if (event.target.closest('button')) return;
+        startDrag(event, nodeId);
+      });
+
+      node.addEventListener('click', event => {
+        event.stopPropagation();
+        selectNode(nodeId);
+      });
+
+      inputHandle.addEventListener('mousedown', event => beginConnection(event, nodeId, 'input'));
+      outputHandle.addEventListener('mousedown', event => beginConnection(event, nodeId, 'output'));
+
+      return node;
+    }
+
+    function positionNodeElement(nodeId, nodeElement, targetX, targetY, center = false) {
+      const width = nodeElement.offsetWidth;
+      const height = nodeElement.offsetHeight;
+      let x = center ? targetX - width / 2 : targetX;
+      let y = center ? targetY - height / 2 : targetY;
+      const maxX = Math.max(0, canvasEl.clientWidth - width);
+      const maxY = Math.max(0, canvasEl.clientHeight - height);
+      x = Math.min(Math.max(0, x), maxX);
+      y = Math.min(Math.max(0, y), maxY);
+      nodeElement.style.left = `${x}px`;
+      nodeElement.style.top = `${y}px`;
+      const instance = state.nodes.get(nodeId);
+      if (instance) {
+        instance.position = { x, y };
+        updateConnectionsForNode(nodeId);
+      }
+    }
+
+    function addNode(definition, dropEvent, options = {}) {
+      const rect = canvasEl.getBoundingClientRect();
+      const nodeId = `node-${++state.counter}`;
+
+      const instance = {
+        id: nodeId,
+        definition: structuredClone(definition),
+        position: { x: 0, y: 0 },
+        io: structuredClone(definition.io || {}),
+        config: structuredClone(definition.config || {}),
+        title: definition.title,
+        description: definition.description,
+        type: definition.type,
+        tags: structuredClone(definition.tags || [])
+      };
+
+      state.nodes.set(nodeId, instance);
+      const element = createNodeElement(nodeId, instance);
+      canvasEl.appendChild(element);
+
+      let targetPosition;
+      let centerOnTarget = false;
+
+      if (options.position) {
+        targetPosition = options.position;
+      } else if (dropEvent?.clientX !== undefined && dropEvent?.clientY !== undefined) {
+        targetPosition = {
+          x: dropEvent.clientX - rect.left,
+          y: dropEvent.clientY - rect.top
+        };
+        centerOnTarget = true;
+      } else {
+        targetPosition = {
+          x: canvasEl.clientWidth / 2,
+          y: canvasEl.clientHeight / 2
+        };
+        centerOnTarget = true;
+      }
+
+      positionNodeElement(nodeId, element, targetPosition.x, targetPosition.y, centerOnTarget);
+      selectNode(nodeId);
+      ensureCanvasState();
+    }
+
+    function startDrag(event, nodeId) {
+      event.preventDefault();
+      const node = canvasEl.querySelector(`[data-id="${nodeId}"]`);
+      if (!node) return;
+      const rect = canvasEl.getBoundingClientRect();
+      const nodeRect = node.getBoundingClientRect();
+      const offsetX = event.clientX - nodeRect.left;
+      const offsetY = event.clientY - nodeRect.top;
+
+      const onMouseMove = moveEvent => {
+        let x = moveEvent.clientX - rect.left - offsetX;
+        let y = moveEvent.clientY - rect.top - offsetY;
+        const maxX = Math.max(0, canvasEl.clientWidth - node.offsetWidth);
+        const maxY = Math.max(0, canvasEl.clientHeight - node.offsetHeight);
+        x = Math.min(Math.max(0, x), maxX);
+        y = Math.min(Math.max(0, y), maxY);
+        node.style.left = `${x}px`;
+        node.style.top = `${y}px`;
+        const instance = state.nodes.get(nodeId);
+        if (instance) {
+          instance.position = { x, y };
+          updateConnectionsForNode(nodeId);
+        }
+      };
+
+      const onMouseUp = () => {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      };
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    }
+
+    function selectNode(nodeId) {
+      state.selectedNodeId = nodeId;
+      canvasEl.querySelectorAll('.node').forEach(node => {
+        node.classList.toggle('selected', node.dataset.id === nodeId);
+      });
+      renderProperties();
+    }
+
+    function deleteNode(nodeId) {
+      removeConnectionsForNode(nodeId);
+      state.nodes.delete(nodeId);
+      const element = canvasEl.querySelector(`[data-id="${nodeId}"]`);
+      if (element) element.remove();
+      if (state.selectedNodeId === nodeId) {
+        state.selectedNodeId = null;
+        renderProperties();
+      }
+      ensureCanvasState();
+    }
+
+    function duplicateNode(nodeId) {
+      const instance = state.nodes.get(nodeId);
+      if (!instance) return;
+      const cloned = structuredClone(instance);
+      cloned.title = `${cloned.title} Copy`;
+      cloned.description = instance.description;
+      cloned.position = {
+        x: instance.position.x + 40,
+        y: instance.position.y + 40
+      };
+      addNode(cloned, null, { position: cloned.position });
+    }
+
+    function renderProperties() {
+      propertiesEl.innerHTML = '';
+      if (!state.selectedNodeId) {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'empty-state';
+        placeholder.innerHTML = `Select a node to customise inputs, outputs and configuration.`;
+        propertiesEl.appendChild(placeholder);
+        return;
+      }
+
+      const node = state.nodes.get(state.selectedNodeId);
+      if (!node) return;
+
+      const template = document.getElementById('property-form-template');
+      const clone = template.content.cloneNode(true);
+
+      const nameInput = clone.querySelector('#node-name');
+      const descriptionInput = clone.querySelector('#node-description');
+      const inputSelect = clone.querySelector('#node-input');
+      const outputSelect = clone.querySelector('#node-output');
+      const configTextarea = clone.querySelector('#node-config');
+      const duplicateButton = clone.querySelector('#duplicate-node');
+
+      nameInput.value = node.title;
+      descriptionInput.value = node.description;
+      configTextarea.value = Object.entries(node.config || {})
+        .map(([key, value]) => `${key}=${value}`)
+        .join(', ');
+
+      populateSelect(inputSelect, node.io?.input || []);
+      populateSelect(outputSelect, node.io?.output || []);
+
+      nameInput.addEventListener('input', event => {
+        node.title = event.target.value;
+        syncNodeElement(node.id);
+      });
+
+      descriptionInput.addEventListener('input', event => {
+        node.description = event.target.value;
+        syncNodeElement(node.id);
+      });
+
+      inputSelect.addEventListener('change', event => {
+        node.io.inputDefault = event.target.value;
+      });
+
+      outputSelect.addEventListener('change', event => {
+        node.io.outputDefault = event.target.value;
+      });
+
+      configTextarea.addEventListener('change', event => {
+        node.config = parseConfig(event.target.value);
+      });
+
+      duplicateButton.addEventListener('click', () => duplicateNode(node.id));
+
+      propertiesEl.appendChild(clone);
+    }
+
+    function populateSelect(selectEl, options) {
+      selectEl.innerHTML = '';
+      options.forEach(option => {
+        const opt = document.createElement('option');
+        opt.value = option;
+        opt.textContent = option;
+        selectEl.appendChild(opt);
+      });
+    }
+
+    function syncNodeElement(nodeId) {
+      const node = state.nodes.get(nodeId);
+      const el = canvasEl.querySelector(`[data-id="${nodeId}"]`);
+      if (!node || !el) return;
+      el.querySelector('.node-title').textContent = node.title || 'Untitled Block';
+      el.querySelector('.node-description').textContent = node.description || '';
+    }
+
+    function parseConfig(input) {
+      const config = {};
+      input.split(',').forEach(entry => {
+        const [key, value] = entry.split('=').map(part => part?.trim()).filter(Boolean);
+        if (key && value !== undefined) {
+          config[key] = parseValue(value);
+        }
+      });
+      return config;
+    }
+
+    function parseValue(value) {
+      if (value === 'true') return true;
+      if (value === 'false') return false;
+      if (!Number.isNaN(Number(value))) return Number(value);
+      if (value.startsWith('[') && value.endsWith(']')) {
+        try {
+          return JSON.parse(value.replace(/'/g, '"'));
+        } catch (error) {
+          return value;
+        }
+      }
+      return value;
+    }
+
+    function exportBlueprint() {
+      const nodes = Array.from(state.nodes.values()).map(node => ({
+        id: node.id,
+        type: node.definition.type,
+        title: node.title,
+        description: node.description,
+        position: node.position,
+        io: node.io,
+        config: node.config
+      }));
+
+      const connections = Array.from(state.connections.values()).map(connection => ({
+        id: connection.id,
+        from: connection.sourceId,
+        to: connection.targetId
+      }));
+
+      const blueprint = { nodes, connections };
+
+      const blob = new Blob([JSON.stringify(blueprint, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'agent-blueprint.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function clearCanvas() {
+      state.nodes.clear();
+      state.connections.clear();
+      state.selectedNodeId = null;
+      state.connectionCounter = 0;
+      canvasEl.querySelectorAll('.node').forEach(node => node.remove());
+      connectionLayer.innerHTML = '';
+      if (activeConnection?.pathEl) {
+        activeConnection.pathEl.remove();
+      }
+      document.removeEventListener('mousemove', trackActiveConnection);
+      document.removeEventListener('mouseup', endActiveConnection);
+      activeConnection = null;
+      ensureCanvasState();
+      renderProperties();
+    }
+
+    canvasEl.addEventListener('dragover', event => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'copy';
+    });
+
+    canvasEl.addEventListener('drop', event => {
+      event.preventDefault();
+      const data = event.dataTransfer.getData('application/json');
+      if (!data) return;
+      try {
+        const definition = JSON.parse(data);
+        addNode(definition, event);
+      } catch (error) {
+        console.error('Could not parse drop payload', error);
+      }
+    });
+
+    canvasEl.addEventListener('click', () => {
+      state.selectedNodeId = null;
+      canvasEl.querySelectorAll('.node').forEach(node => node.classList.remove('selected'));
+      renderProperties();
+    });
+
+    clearCanvasBtn.addEventListener('click', clearCanvas);
+    exportBtn.addEventListener('click', exportBlueprint);
+    window.addEventListener('resize', updateAllConnections);
+
+    renderLibrary();
+    ensureCanvasState();
+    renderProperties();
+  </script>
+</body>
+</html>
